@@ -119,6 +119,13 @@ bài lab, không phải điểm giơ tay, phát biểu hay pitching trên lớp.
 
 Chi tiết từng bước: [LAB_GUIDE.md](LAB_GUIDE.md).
 
+### Demo bổ sung: NarrativeHealth
+
+Giữ nguyên cấu trúc lab; mặc định dùng mock offline. Để bật hai provider
+OpenAI-compatible và đọc DB NarrativeHealth bằng tool chỉ đọc, xem
+[INTEGRATION.md](INTEGRATION.md) và phần cấu hình tùy chọn trong `.env.example`.
+Không điền secret vào repository. Đây là mở rộng demo, không thay thế CP1–CP5.
+
 ---
 
 ## Cài Đặt
