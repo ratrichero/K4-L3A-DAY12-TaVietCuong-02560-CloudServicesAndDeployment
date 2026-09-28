@@ -26,7 +26,7 @@ services:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -35,10 +35,41 @@ services:
       timeout: 3s
       retries: 5
 
-  # TODO (CP2): khai báo service `agent` ở đây
-  # agent:
-  #   build: .
-  #   ...
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      AGENT_API_KEY: ${AGENT_API_KEY:?Set AGENT_API_KEY in .env}
+      REDIS_URL: redis://redis:6379/0
+      PORT: "8000"
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-10}
+      MONTHLY_BUDGET_USD: ${MONTHLY_BUDGET_USD:-10}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
+      LLM_OUTPUT_LIMIT_PARAMETER: ${LLM_OUTPUT_LIMIT_PARAMETER:-max_tokens}
+      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-1200}
+      LLM_MAX_INPUT_TOKENS: ${LLM_MAX_INPUT_TOKENS:-32000}
+      REAL_AGENT_GLOBAL_BUDGET_USD: ${REAL_AGENT_GLOBAL_BUDGET_USD:-10}
+      REAL_AGENT_ENABLED: ${REAL_AGENT_ENABLED:-false}
+      DATABASE_URL: ${DATABASE_URL:-}
+      LLM_PRIMARY_BASE_URL: ${LLM_PRIMARY_BASE_URL:-}
+      LLM_PRIMARY_API_KEY: ${LLM_PRIMARY_API_KEY:-}
+      LLM_PRIMARY_MODEL: ${LLM_PRIMARY_MODEL:-}
+      LLM_SECONDARY_BASE_URL: ${LLM_SECONDARY_BASE_URL:-}
+      LLM_SECONDARY_API_KEY: ${LLM_SECONDARY_API_KEY:-}
+      LLM_SECONDARY_MODEL: ${LLM_SECONDARY_MODEL:-}
+      LLM_MAX_INPUT_USD_PER_MILLION: ${LLM_MAX_INPUT_USD_PER_MILLION:-}
+      LLM_MAX_OUTPUT_USD_PER_MILLION: ${LLM_MAX_OUTPUT_USD_PER_MILLION:-}
+    stop_grace_period: 150s
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
 
 volumes:
   redis-data:
