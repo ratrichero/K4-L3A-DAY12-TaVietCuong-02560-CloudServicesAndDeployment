@@ -1,0 +1,91 @@
+# CI/CD — BONUS: tự test, tự build, chỉ deploy khi mọi thứ xanh.
+#
+# Luồng: push/PR vào main → job `test` chạy pytest (không gồm test_cp5 vì
+# nó cần service đang sống, và test_bonus_cicd vì nó kiểm tra chính workflow
+# này) → job `build` dựng Docker image trên máy sạch → job `deploy` chỉ chạy
+# khi cả hai job trước pass VÀ đây là push lên main (PR không được kéo theo
+# một lần deploy).
+#
+# Cần cấu hình trên GitHub (Settings → Secrets and variables → Actions):
+#   - Secret: RAILWAY_TOKEN  (Railway dashboard → Account Settings → Tokens)
+#   - Variable: PUBLIC_URL   (URL công khai của service, không bí mật)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 12-Factor ở CP1: cùng code, môi trường CI chỉ khác biến môi trường.
+      # AGENT_API_KEY là giá trị giả — máy CI không có .env.
+      - name: Run tests
+        env:
+          AGENT_API_KEY: ci-dummy
+          REDIS_URL: fake://
+        run: >
+          pytest tests/
+          --ignore=tests/test_cp5.py
+          --ignore=tests/test_bonus_cicd.py
+          -m "not docker"
+          -v
+
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Bắt lỗi "máy tôi build được": Dockerfile phải build được trên môi
+      # trường sạch, và .dockerignore không được loại nhầm file cần thiết
+      - name: Build image
+        run: docker build -t day12-agent:ci .
+
+  deploy:
+    name: Deploy to Railway
+    needs: [test, build] # deploy ĐỢI test + build pass — không có dòng này, code hỏng vẫn lên production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      # Token nằm trong GitHub Secrets, GitHub tự che giá trị trong log
+      - name: Deploy
+        run: railway up --service day12-agent
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Deploy xong mà không kiểm tra thì chỉ biết "lệnh chạy xong",
+      # không biết "service còn sống"
+      - name: Smoke test
+        run: |
+          sleep 45
+          curl -fsS "${{ vars.PUBLIC_URL }}/health"
