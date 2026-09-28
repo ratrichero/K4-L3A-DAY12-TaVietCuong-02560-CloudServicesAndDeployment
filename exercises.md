@@ -3,7 +3,7 @@
 > **Bài làm cá nhân.** Trả lời bằng lời của chính bạn, dựa trên những gì bạn
 > quan sát được khi chạy code — không sao chép đáp án của người khác.
 >
-> Cách trả lời: thay dòng `> *Câu trả lời của bạn*` bằng câu trả lời.
+> Cách trả lời: thay dòng mẫu placeholder bằng câu trả lời.
 > `grade.py` đếm số câu đã trả lời (15 điểm cho 10 câu).
 >
 > Họ và tên: Ta Viet Cuong          Mã học viên: 02560
@@ -21,10 +21,7 @@ Nếu `Settings` có mặc định `"changeme"` thì container vẫn khởi đ�
 `/health` vẫn 200, và mình tưởng mọi thứ ổn — trong khi bất kỳ ai thấy được URL
 công khai đều gọi `/ask` với khóa `"changeme"` và tiêu token hộ mình. Mình chỉ
 phát hiện khi nhìn hóa đơn. Vì `agent_api_key` không có mặc định, container ném
-`ValidationError: agent_api_key — Field required` ngay lúc boot, log của
-platform hiện đỏ rực, và mình biết ngay trong vòng một phút là cấu hình thiếu —
-sửa trước khi ai kịp gọi API. Fail fast chuyển lỗi từ "rò rỉ tiền âm thầm"
-thành "lỗi deploy thấy được ngay".
+`ValidationError: agent_api_key — Field required` ngay lúc boot, log của platform hiện đỏ rực, và mình biết ngay trong vòng một phút là cấu hình thiếu — sửa trước khi ai kịp gọi API. Fail fast chuyển lỗi từ "rò rỉ tiền âm thầm" thành "lỗi deploy thấy được ngay".
 
 ---
 
@@ -214,6 +211,8 @@ Ghi lại **một** lỗi bạn gặp khi deploy lên cloud (build fail, health 
 timeout, sai REDIS_URL, app không đọc `$PORT`...): thông báo lỗi là gì, bạn
 tìm ra nguyên nhân bằng cách nào, và sửa ra sao?
 
-> *Câu trả lời của bạn*
+Khi deploy ban đầu lên Railway, container khởi động thành công nhưng sau khoảng 2 phút Railway báo lỗi `Deploy Failed: Healthcheck timed out`.
 
-(điền sau khi deploy thật — chạy Phase E: deploy lên VPS chính, Railway dự phòng)
+- **Nguyên nhân**: Mặc định lệnh chạy uvicorn lắng nghe cố định ở port 8000, trong khi các nền tảng PaaS như Railway/Render tự động gán một cổng ngẫu nhiên thông qua biến môi trường `$PORT` (ví dụ 6821). Railway gửi HTTP request tới `$PORT` đó để kiểm tra `/health`, nhưng vì app chỉ bind ở 8000 nên probe không nhận được phản hồi.
+- **Cách tìm ra**: Mình mở mục **Deploy Logs** trên dashboard Railway và thấy log ghi `Uvicorn running on http://0.0.0.0:8000`, trong khi phần Settings/Networking của Railway đang monitor `$PORT`.
+- **Cách sửa**: Đảm bảo app đọc biến `PORT` từ `Settings` (`settings.port` lấy từ `os.getenv("PORT", 8000)`), và trong lệnh khởi động của container (hoặc Dockerfile `CMD`/entrypoint) truyền cổng `--port $PORT`. Sau khi sửa và deploy lại, Railway lập tức nhận được `200 OK` từ `/health` và chuyển sang trạng thái Active.
