@@ -71,8 +71,6 @@ docker images | grep agent
 
 Giải thích: phần dung lượng chênh lệch đó là những gì?
 
-> *Câu trả lời của bạn*
-
 Chênh lệch ~800MB đến từ những gì stage runtime không còn mang theo:
 
 1. **Base image đầy đủ → slim**: bản 1 stage dùng `python:3.11` đầy đủ
@@ -97,8 +95,6 @@ Sửa một ký tự trong `app/main.py` rồi build lại. Với Dockerfile c�
 layer nào được dùng lại từ cache, layer nào phải chạy lại? Nếu bạn đặt
 `COPY . .` lên trước `RUN pip install` thì kết quả khác thế nào?
 
-> *Câu trả lời của bạn*
-
 Dockerfile của mình đặt `COPY requirements.txt` → `RUN pip install` →
 `COPY app` → `COPY utils`. Khi sửa một ký tự trong `app/main.py`:
 
@@ -121,8 +117,6 @@ Container mặc định chạy bằng root. Mô tả chuỗi sự kiện dẫn t
 trong code Python của bạn" tới "kẻ tấn công có quyền cao trên máy host", và
 lệnh `USER` cắt đứt chuỗi đó ở chỗ nào.
 
-> *Câu trả lời của bạn*
-
 Chuỗi sự kiện: (1) app của mình có lỗ hổng, ví dụ không kiểm soát độ dài
 payload trong `/ask` dẫn tới heap overflow, hoặc dính path traversal khi đọc
 file theo tên từ request; (2) kẻ tấn công khai thác và có được khả năng chạy
@@ -143,8 +137,6 @@ phút đồng hồ (reset lúc giây 00), một người dùng có thể gửi t
 request trong 2 giây liên tiếp khi hạn mức là 10/phút? Giải thích cách đạt được
 con số đó.
 
-> *Câu trả lời của bạn*
-
 Tối đa **20 request trong 2 giây**. Cách đạt: gửi 10 request vào lúc
 10:00:59 — đếm theo phút đồng hồ thì 10 request đó thuộc "phút 10:00" và
 hạn mức 10 đã dùng vừa khít; một giây sau, lúc 10:01:00, đồng hồ đổi phút và
@@ -160,8 +152,6 @@ request trong 60 giây *trước thời điểm hiện tại*, nên request th�
 
 Hai cơ chế này khác nhau ở điểm nào? Cho một tình huống mà rate limit cho qua
 nhưng cost guard phải chặn, và một tình huống ngược lại.
-
-> *Câu trả lời của bạn*
 
 Rate limit giới hạn **tần suất** (bao nhiêu request trong 60 giây), cost guard
 giới hạn **số tiền** (tổng USD trong tháng). Chúng trả lời hai câu hỏi khác
@@ -183,8 +173,6 @@ nên không thay thế nhau.
 Nếu gộp hai endpoint làm một và cho nó kiểm tra Redis, chuyện gì xảy ra với cụm
 3 container khi Redis mất kết nối 30 giây? Trả lời theo đúng thứ tự sự kiện.
 
-> *Câu trả lời của bạn*
-
 Thứ tự sự kiện: (1) Redis mất kết nối 30 giây; (2) `/health` của cả 3 container
 cùng gọi `ping()` vào Redis → fail → cùng trả 503; (3) orchestrator coi 503
 từ liveness probe là "process chết" → **restart cả 3 container cùng lúc** —
@@ -204,8 +192,6 @@ restart — Redis sống lại là tự hồi phục).
 Chạy `docker compose up --scale agent=3` rồi gọi `/ask` nhiều lần với cùng một
 `X-User-Id`. Quan sát `history_length` trong response. Nếu lịch sử được lưu
 trong một dict Python thay vì Redis, bạn sẽ thấy con số đó thay đổi thế nào?
-
-> *Câu trả lời của bạn*
 
 Lần gọi thứ 1 trả `history_length: 0`, thứ 2 là 2, thứ 3 là 4... — tăng dần
 đều 2 message mỗi lần (user + assistant), **kể cả khi các request rơi vào
