@@ -25,38 +25,22 @@ class Lifecycle:
     def request_shutdown(self, signum=None, frame=None) -> None:
         """Signal handler: đánh dấu process đang tắt dần.
 
-        TODO (CP4):
-          1. ``self.shutting_down = True``
-          2. Gọi lại handler cũ nếu có::
-
-                previous = self._previous.get(signum)
-                if callable(previous):
-                    previous(signum, frame)
-
-        Bước 2 quan trọng hơn vẻ ngoài của nó. Mỗi tín hiệu chỉ có **một**
-        handler: đăng ký handler của mình là ghi đè handler của uvicorn — thứ
-        chịu trách nhiệm thật sự cho việc dừng server. Không gọi lại nó thì
-        app bật cờ "đang tắt" rồi... chạy tiếp mãi mãi, cho tới khi
-        orchestrator hết kiên nhẫn và SIGKILL. Đúng cái mà graceful shutdown
-        định tránh.
-
-        Chữ ký ``(signum, frame)`` là bắt buộc vì Python gọi handler với 2
-        tham số này. Không làm gì nặng ở đây (không gọi mạng, không ghi file)
-        — handler chạy xen giữa bytecode.
+        Chỉ làm việc rất nhẹ (bật cờ) — handler chạy xen giữa bytecode.
+        Sau đó gọi lại handler cũ: mỗi tín hiệu chỉ có MỘT handler, đăng ký
+        handler của mình là ghi đè handler dừng server của uvicorn. Không
+        nhường lại thì app bật cờ "đang tắt" rồi chạy tiếp mãi mãi cho tới
+        khi bị SIGKILL — đúng cái graceful shutdown định tránh.
         """
-        raise NotImplementedError("TODO (CP4): cài đặt request_shutdown")
+        self.shutting_down = True
+        previous = self._previous.get(signum)
+        if callable(previous):
+            previous(signum, frame)
 
     def install(self) -> None:
-        """Đăng ký handler cho SIGTERM và SIGINT, nhớ lại handler cũ.
-
-        TODO (CP4): với mỗi tín hiệu trong ``(signal.SIGTERM, signal.SIGINT)``:
-
-            self._previous[sig] = signal.getsignal(sig)   # nhớ handler cũ
-            signal.signal(sig, self.request_shutdown)     # rồi mới ghi đè
-
-        SIGTERM: orchestrator yêu cầu tắt. SIGINT: bạn bấm Ctrl+C.
-        """
-        raise NotImplementedError("TODO (CP4): cài đặt install")
+        """Đăng ký handler cho SIGTERM và SIGINT, nhớ lại handler cũ."""
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            self._previous[sig] = signal.getsignal(sig)  # nhớ handler cũ
+            signal.signal(sig, self.request_shutdown)  # rồi mới ghi đè
 
 
 # Một instance dùng chung cho cả app
