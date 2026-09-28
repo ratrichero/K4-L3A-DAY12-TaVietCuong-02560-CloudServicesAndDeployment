@@ -18,8 +18,8 @@
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://myapp.railway.app |
-| Platform | Railway |
+| Public URL | https://day12-agent-ooc2.onrender.com |
+| Platform | Render |
 | Ngày deploy | 2026-09-28 |
 
 
@@ -31,7 +31,7 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 |------|--------|---------|
 | `PORT` | ✅ | platform tự gán |
 | `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | Redis add-on của Railway |
+| `REDIS_URL` | ✅ | Redis add-on của Render |
 | `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
 | `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
 | `LOG_LEVEL` | ✅ | INFO |
@@ -42,18 +42,18 @@ Thay `<URL>` bằng Public URL ở trên:
 
 ```bash
 # 1. Liveness — mong đợi 200 {"status":"ok"}
-curl -i <URL>/health
+curl -i https://day12-agent-ooc2.onrender.com/health
 
 # 2. Readiness — mong đợi 200 {"status":"ready"} (đã nối được Redis)
-curl -i <URL>/ready
+curl -i https://day12-agent-ooc2.onrender.com/ready
 
 # 3. Không có API key — mong đợi 401
-curl -i -X POST <URL>/ask \
+curl -i -X POST https://day12-agent-ooc2.onrender.com/ask \
   -H "Content-Type: application/json" \
   -d '{"question":"Hello"}'
 
 # 4. Có API key — mong đợi 200 kèm câu trả lời
-curl -i -X POST <URL>/ask \
+curl -i -X POST https://day12-agent-ooc2.onrender.com/ask \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $AGENT_API_KEY" \
   -H "X-User-Id: sv-test" \
